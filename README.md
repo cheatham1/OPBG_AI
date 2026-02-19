@@ -1,6 +1,6 @@
 # Understanding the vaccine stance of Italian tweets
 
-Social media is often used to express opinions and attitudes toward vaccines.
+Social media is often used to express opinions and attitudes, and being "anonomous" it can be very useful for understanding public opinion.
 I worked on a project for research hospital OPBG (https://www.ospedalebambinogesu.it/) studying vaccine related tweets.
 In July 2022 we published our findings
 https://www.frontiersin.org/journals/public-health/articles/10.3389/fpubh.2022.948880/full#B29

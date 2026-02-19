@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Italian Vaccine Stance Analysis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f1119; color: #e0e4ec; font-family: 'Inter', -apple-system, sans-serif; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+  /* Header */
+  .header { padding-top: 36px; }
+  .dots { display: flex; gap: 10px; margin-bottom: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: #f0f2f8; margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: #6b7588; margin-bottom: 22px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid #1e2330; }
+  .tab-btn {
+    padding: 10px 20px; background: transparent; border: none;
+    border-bottom: 2px solid transparent; color: #5a6478;
+    font-size: 13px; font-weight: 400; cursor: pointer;
+    border-radius: 6px 6px 0 0; font-family: inherit; transition: all 0.15s;
+  }
+  .tab-btn.active { background: #1a1e2a; border-bottom-color: #4fd48a; color: #e8ecf2; font-weight: 600; }
+  .tab-btn:hover:not(.active) { color: #8a94a8; }
+
+  /* Content */
+  .content { padding: 24px 0 60px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Cards */
+  .card { background: #151820; border-radius: 12px; padding: 20px; }
+  .card-title { font-size: 14px; font-weight: 600; color: #c0c8d8; margin-bottom: 16px; }
+  .card-sm-title { font-size: 13px; font-weight: 600; color: #c0c8d8; margin-bottom: 12px; }
+
+  /* Grid layouts */
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  .grid-2-insights { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3-callouts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* Stat cards */
+  .stat-card { background: #151820; border-radius: 12px; padding: 20px; }
+  .stat-label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .stat-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .stat-label span { font-size: 13px; color: #8a94a8; font-weight: 500; }
+  .stat-number { font-size: 36px; font-weight: 700; letter-spacing: -0.03em; }
+  .stat-pct { font-size: 12px; color: #5a6478; margin-top: 4px; }
+
+  /* Insight card */
+  .insight-card {
+    background: #1a1e2a; border-radius: 10px; padding: 16px 18px;
+    border-left: 3px solid;
+  }
+  .insight-title { font-size: 14px; font-weight: 600; color: #e8ecf2; margin-bottom: 6px; line-height: 1.4; }
+  .insight-detail { font-size: 12.5px; color: #8a94a8; line-height: 1.55; }
+
+  /* Callout cards */
+  .callout { background: #151820; border-radius: 10px; padding: 16px; border-top: 3px solid; }
+  .callout-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .callout-text { font-size: 12px; color: #8a94a8; line-height: 1.5; }
+
+  /* Summary box */
+  .summary-box { background: #151820; border-radius: 12px; padding: 20px; margin-top: 20px; }
+  .summary-text { font-size: 13px; color: #8a94a8; line-height: 1.7; }
+
+  /* Word cloud */
+  .word-cloud { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; padding: 8px 0; }
+  .word-cloud span { font-family: 'DM Mono', monospace; letter-spacing: -0.02em; }
+
+  /* Hashtag bars */
+  .hashtag-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .hashtag-bar { height: 6px; border-radius: 3px; min-width: 8px; }
+  .hashtag-label { font-family: 'DM Mono', monospace; font-size: 12px; color: #a0a8b8; white-space: nowrap; }
+  .hashtag-count { color: #636b7a; }
+
+  /* Length bars */
+  .length-bars { display: flex; gap: 24px; align-items: flex-end; }
+  .length-bar-wrap { flex: 1; text-align: center; }
+  .length-bar { border-radius: 6px 6px 0 0; margin: 0 auto; width: 60%; display: flex; align-items: flex-start; justify-content: center; padding-top: 8px; }
+  .length-number { font-size: 18px; font-weight: 700; }
+  .length-label { font-size: 11px; color: #6b7588; margin-top: 6px; }
+
+  /* Chart containers */
+  .chart-wrap { position: relative; }
+  canvas { max-width: 100%; }
+
+  /* Description text */
+  .desc { font-size: 13px; color: #6b7588; margin-bottom: 20px; line-height: 1.6; }
+
+  /* Section titles inside language tab */
+  .lang-section { background: #151820; border-radius: 12px; padding: 18px; }
+  .lang-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .lang-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .lang-header h3 { font-size: 13px; font-weight: 600; margin: 0; color: #c0c8d8; }
+
+  .mb-16 { margin-bottom: 16px; }
+  .mb-20 { margin-bottom: 20px; }
+  .mb-28 { margin-bottom: 28px; }
+
+  @media (max-width: 768px) {
+    .grid-3, .grid-3-callouts { grid-template-columns: 1fr; }
+    .grid-2, .grid-2-insights { grid-template-columns: 1fr; }
+    .container { padding: 0 16px; }
+    h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="dots">
+      <div class="dot" style="background:#3aaa6d"></div>
+      <div class="dot" style="background:#7a8ba8"></div>
+      <div class="dot" style="background:#e04848"></div>
+    </div>
+    <h1>Italian Vaccine Stance Analysis</h1>
+    <p class="subtitle">1,738 social media posts · 3 stance categories · Classified by medical team</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="themes">Themes</button>
+      <button class="tab-btn" data-tab="language">Language</button>
+      <button class="tab-btn" data-tab="insights">Insights</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ==================== OVERVIEW TAB ==================== -->
+    <div class="tab-panel active" id="tab-overview">
+      <!-- Stat cards -->
+      <div class="grid-3">
+        <div class="stat-card" style="border:1px solid #e0484822">
+          <div class="stat-label"><div class="stat-dot" style="background:#e04848"></div><span>Discouraging</span></div>
+          <div class="stat-number" style="color:#e04848">639</div>
+          <div class="stat-pct">36.8% of corpus</div>
+        </div>
+        <div class="stat-card" style="border:1px solid #7a8ba822">
+          <div class="stat-label"><div class="stat-dot" style="background:#7a8ba8"></div><span>Neutral</span></div>
+          <div class="stat-number" style="color:#7a8ba8">541</div>
+          <div class="stat-pct">31.1% of corpus</div>
+        </div>
+        <div class="stat-card" style="border:1px solid #3aaa6d22">
+          <div class="stat-label"><div class="stat-dot" style="background:#3aaa6d"></div><span>Promotional</span></div>
+          <div class="stat-number" style="color:#3aaa6d">558</div>
+          <div class="stat-pct">32.1% of corpus</div>
+        </div>
+      </div>
+
+      <!-- Distribution + Radar -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Distribution</div>
+          <div class="chart-wrap"><canvas id="pieChart" height="220"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Topic Fingerprint</div>
+          <div class="chart-wrap"><canvas id="radarChart" height="236"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Structural features -->
+      <div class="card">
+        <div class="card-title">Structural Features (% of posts)</div>
+        <div class="chart-wrap"><canvas id="structuralChart" height="200"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ==================== THEMES TAB ==================== -->
+    <div class="tab-panel" id="tab-themes">
+      <p class="desc">Percentage of posts in each stance category that reference a given theme. Themes were detected via Italian keyword matching.</p>
+      <div class="card mb-20">
+        <div class="chart-wrap"><canvas id="themesChart" height="380"></canvas></div>
+      </div>
+      <div class="grid-3-callouts">
+        <div class="callout" style="border-top-color:#e04848">
+          <div class="callout-title" style="color:#e04848">Discouraging Dominates</div>
+          <div class="callout-text">Adverse Effects (11%), Children (9.9%), Death (9.5%), Safety (7%), Obligation (6.1%) — fear-driven themes cluster overwhelmingly in anti-vax posts.</div>
+        </div>
+        <div class="callout" style="border-top-color:#7a8ba8">
+          <div class="callout-title" style="color:#7a8ba8">Neutral = COVID News</div>
+          <div class="callout-text">45.5% of neutral posts mention COVID — nearly double the other categories. Neutral posts are primarily pandemic news coverage about trials, doses, and timelines.</div>
+        </div>
+        <div class="callout" style="border-top-color:#3aaa6d">
+          <div class="callout-title" style="color:#3aaa6d">Promotional Fights Back</div>
+          <div class="callout-text">16.7% of promotional posts mention "NoVax" — the #1 distinctive feature. Pro-vaccine voices actively name and criticize the anti-vax movement.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== LANGUAGE TAB ==================== -->
+    <div class="tab-panel" id="tab-language">
+      <p class="desc">Distinctive words unique to each stance (high relative frequency vs. other categories), plus top hashtags.</p>
+
+      <div class="grid-2 mb-16">
+        <!-- Distinctive Words -->
+        <div class="lang-section" id="words-discouraging"></div>
+        <div class="lang-section" id="words-neutral"></div>
+        <div class="lang-section" id="words-promotional"></div>
+        <!-- Hashtags -->
+        <div class="lang-section" id="hashtags-discouraging"></div>
+        <div class="lang-section" id="hashtags-neutral"></div>
+        <div class="lang-section" id="hashtags-promotional"></div>
+      </div>
+
+      <!-- Post Length -->
+      <div class="card">
+        <div class="card-sm-title">Average Post Length (characters)</div>
+        <div class="length-bars">
+          <div class="length-bar-wrap">
+            <div class="length-bar" style="height:109px;background:linear-gradient(to top,#e0484833,#e0484888)">
+              <span class="length-number" style="color:#e04848">182</span>
+            </div>
+            <div class="length-label">Discouraging</div>
+          </div>
+          <div class="length-bar-wrap">
+            <div class="length-bar" style="height:83px;background:linear-gradient(to top,#7a8ba833,#7a8ba888)">
+              <span class="length-number" style="color:#7a8ba8">138</span>
+            </div>
+            <div class="length-label">Neutral</div>
+          </div>
+          <div class="length-bar-wrap">
+            <div class="length-bar" style="height:101px;background:linear-gradient(to top,#3aaa6d33,#3aaa6d88)">
+              <span class="length-number" style="color:#3aaa6d">169</span>
+            </div>
+            <div class="length-label">Promotional</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== INSIGHTS TAB ==================== -->
+    <div class="tab-panel" id="tab-insights">
+      <p class="desc">Key findings from the analysis of 1,738 Italian social media posts on vaccine attitudes.</p>
+      <div class="grid-2-insights" id="insights-grid"></div>
+      <div class="summary-box">
+        <div class="card-title">Summary</div>
+        <div class="summary-text">
+          The three stances occupy distinct rhetorical territories. <strong style="color:#e04848">Discouraging</strong> posts
+          leverage emotional fear through references to children, death, adverse effects, and conspiracy figures like Bill Gates —
+          they ask more questions, use more exclamations, and write the longest posts. <strong style="color:#7a8ba8">Neutral</strong> posts
+          are the most link-heavy and fact-oriented, dominated by COVID news coverage with references to testing, dosage numbers,
+          and institutional sources. <strong style="color:#3aaa6d">Promotional</strong> posts adopt a dual strategy:
+          collective-language appeals ("we", "hope", "world") alongside active criticism of the NoVax movement. The dataset
+          is roughly balanced across the three classes, making it a strong foundation for stance classification tasks.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const COLORS = { Discouraging: '#e04848', Neutral: '#7a8ba8', Promotional: '#3aaa6d' };
+const ACCENT = { Discouraging: '#ff6b6b', Neutral: '#94a7c4', Promotional: '#4fd48a' };
+
+const distinctive = {
+  Discouraging: [
+    {w:'cavie',c:9},{w:'danni',c:27},{w:'polio',c:8},{w:'nessun',c:14},{w:'iniettare',c:7},
+    {w:'dubbi',c:7},{w:'esistono',c:13},{w:'morta',c:6},{w:'imporre',c:6},{w:'sicuri',c:11},
+    {w:'allarme',c:6},{w:'gates',c:32}
+  ],
+  Neutral: [
+    {w:'prime',c:10},{w:'pomezia',c:8},{w:'aprile',c:7},{w:'somministrate',c:6},{w:'tedesco',c:10},
+    {w:'ricciardi',c:9},{w:'sull',c:21},{w:'test',c:50},{w:'dosi',c:37},{w:'sperimentazione',c:16},
+    {w:'uomo',c:22},{w:'milioni',c:23}
+  ],
+  Promotional: [
+    {w:'novax',c:56},{w:'fino',c:37},{w:'bene',c:27},{w:'forse',c:21},{w:'siamo',c:20},
+    {w:'abbiamo',c:17},{w:'speriamo',c:11},{w:'mondo',c:30},{w:'casa',c:15},{w:'mascherine',c:10},
+    {w:'prego',c:7},{w:'ignoranti',c:7}
+  ]
+};
+
+const topHashtags = {
+  Discouraging: [
+    {t:'#vaccino',c:72},{t:'#vaccini',c:45},{t:'#coronavirus',c:20},{t:'#covid19',c:15},
+    {t:'#novax',c:6},{t:'#greenpass',c:6},{t:'#lascienza',c:5},{t:'#libertadiscelta',c:4},{t:'#meningite',c:4}
+  ],
+  Neutral: [
+    {t:'#coronavirus',c:57},{t:'#vaccino',c:47},{t:'#covid19',c:23},{t:'#vaccini',c:13},
+    {t:'#astrazeneca',c:6},{t:'#italia',c:5},{t:'#trump',c:4},{t:'#novax',c:4},{t:'#speranza',c:4}
+  ],
+  Promotional: [
+    {t:'#coronavirus',c:38},{t:'#novax',c:35},{t:'#vaccino',c:26},{t:'#covid19',c:20},
+    {t:'#vaccini',c:11},{t:'#italia',c:5},{t:'#influenza',c:3},{t:'#billgates',c:3},{t:'#trump',c:3}
+  ]
+};
+
+const insights = [
+  {title:'Discouraging posts are the most emotionally charged',detail:'24.3% contain questions (rhetorical doubt-raising) and 21.9% use exclamations — far higher than other stances. This suggests a persuasion strategy built on emotional urgency and sowing doubt.',stance:'Discouraging'},
+  {title:'Adverse effects are the #1 weapon of anti-vax discourse',detail:'11% of discouraging posts reference adverse effects vs. just 0.7% of neutral and 1.3% of promotional posts. Terms like "danni" (damages), "cavie" (guinea pigs), and "reazioni avverse" dominate.',stance:'Discouraging'},
+  {title:'Children are disproportionately invoked by anti-vax posts',detail:'9.9% of discouraging posts mention children — 6.6× the neutral rate. Framing vaccines as threats to children is a powerful emotional lever unique to this stance.',stance:'Discouraging'},
+  {title:'Promotional posts fight back by naming the opposition',detail:'16.7% of promotional posts mention "NoVax" — they actively call out and criticize the anti-vax movement rather than just promoting benefits. This is a combative pro-vaccine strategy.',stance:'Promotional'},
+  {title:'Neutral posts are news-driven and link-heavy',detail:'71.7% include links (vs. 58% discouraging, 42% promotional) and reference news sources, testing timelines, and dose numbers. COVID dominates at 45.5% — these are informational dispatches.',stance:'Neutral'},
+  {title:'Bill Gates conspiracy theory is a discouraging-stance marker',detail:'Gates is mentioned in 4.4% of discouraging posts — nearly 2× the neutral rate and 3× the promotional rate. The "Bill Gates" bigram appears almost exclusively in anti-vax content.',stance:'Discouraging'},
+  {title:'Promotional posts use collective language',detail:'Words like "siamo" (we are), "abbiamo" (we have), "speriamo" (we hope), and "mondo" (world) are distinctively promotional — framing vaccination as a shared societal effort.',stance:'Promotional'},
+  {title:'Death rhetoric clusters in discouraging posts',detail:'9.5% of discouraging posts reference death — nearly 5× the neutral rate. Combined with terms like "morta" and emotional intensity of exclamations, this creates a fear-based narrative.',stance:'Discouraging'},
+];
+
+// ===== TABS =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ===== CHART.JS DEFAULTS =====
+Chart.defaults.color = '#6b7588';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+Chart.defaults.plugins.legend.labels.padding = 16;
+Chart.defaults.plugins.tooltip.backgroundColor = '#1a1e2a';
+Chart.defaults.plugins.tooltip.borderColor = '#2a3040';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+Chart.defaults.plugins.tooltip.padding = 10;
+
+// ===== PIE CHART =====
+new Chart(document.getElementById('pieChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Discouraging', 'Neutral', 'Promotional'],
+    datasets: [{
+      data: [639, 541, 558],
+      backgroundColor: ['#e04848', '#7a8ba8', '#3aaa6d'],
+      borderWidth: 0,
+      hoverOffset: 6
+    }]
+  },
+  options: {
+    cutout: '52%',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#8a94a8', padding: 16 } },
+      tooltip: {
+        callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} posts (${(ctx.raw/1738*100).toFixed(1)}%)` }
+      }
+    }
+  }
+});
+
+// ===== RADAR CHART =====
+const radarLabels = ['COVID','Children','Death','Adverse FX','Safety','Science','NoVax','Freedom','Obligation','Influenza'];
+new Chart(document.getElementById('radarChart'), {
+  type: 'radar',
+  data: {
+    labels: radarLabels,
+    datasets: [
+      { label: 'Discouraging', data: [21.1,9.9,9.5,11.0,7.0,9.2,1.7,3.9,6.1,6.9], borderColor: '#e04848', backgroundColor: '#e0484820', borderWidth: 1.5, pointRadius: 2 },
+      { label: 'Neutral', data: [45.5,1.5,2.0,0.7,2.4,7.4,4.4,0.9,2.4,2.0], borderColor: '#7a8ba8', backgroundColor: '#7a8ba815', borderWidth: 1.5, pointRadius: 2 },
+      { label: 'Promotional', data: [31.2,3.8,4.8,1.3,3.2,8.4,16.7,3.0,2.7,5.2], borderColor: '#3aaa6d', backgroundColor: '#3aaa6d20', borderWidth: 1.5, pointRadius: 2 }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      r: {
+        ticks: { display: false },
+        grid: { color: '#2a3040' },
+        angleLines: { color: '#2a3040' },
+        pointLabels: { color: '#8a94a8', font: { size: 10 } }
+      }
+    },
+    plugins: { legend: { position: 'bottom', labels: { color: '#8a94a8' } } }
+  }
+});
+
+// ===== STRUCTURAL CHART =====
+const structLabels = ['Questions (?)','Exclamations (!)','Links','User Mentions'];
+new Chart(document.getElementById('structuralChart'), {
+  type: 'bar',
+  data: {
+    labels: structLabels,
+    datasets: [
+      { label: 'Discouraging', data: [24.3,21.9,58.1,37.6], backgroundColor: '#e04848', borderRadius: 3, barPercentage: 0.7 },
+      { label: 'Neutral', data: [12.6,4.1,71.7,22.0], backgroundColor: '#7a8ba8', borderRadius: 3, barPercentage: 0.7 },
+      { label: 'Promotional', data: [15.1,10.9,41.8,38.5], backgroundColor: '#3aaa6d', borderRadius: 3, barPercentage: 0.7 }
+    ]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: { grid: { color: '#1e233044' }, ticks: { callback: v => v + '%' } },
+      y: { grid: { display: false }, ticks: { color: '#8a94a8', font: { size: 12 } } }
+    },
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#8a94a8' } },
+      tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw}%` } }
+    }
+  }
+});
+
+// ===== THEMES CHART =====
+const themeLabels = ['COVID/Coronavirus','Children','Bill Gates','Obligation','Death','Adverse Effects','Safety','Science','NoVax Mentions','Freedom','Meningitis','Influenza'];
+const themeDisc = [21.1,9.9,4.4,6.1,9.5,11.0,7.0,9.2,1.7,3.9,3.9,6.9];
+const themeNeut = [45.5,1.5,2.4,2.4,2.0,0.7,2.4,7.4,4.4,0.9,1.1,2.0];
+const themeProm = [31.2,3.8,1.4,2.7,4.8,1.3,3.2,8.4,16.7,3.0,0.7,5.2];
+
+new Chart(document.getElementById('themesChart'), {
+  type: 'bar',
+  data: {
+    labels: themeLabels,
+    datasets: [
+      { label: 'Discouraging', data: themeDisc, backgroundColor: '#e04848', borderRadius: 3, barPercentage: 0.75 },
+      { label: 'Neutral', data: themeNeut, backgroundColor: '#7a8ba8', borderRadius: 3, barPercentage: 0.75 },
+      { label: 'Promotional', data: themeProm, backgroundColor: '#3aaa6d', borderRadius: 3, barPercentage: 0.75 }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#8a94a8', font: { size: 10 }, maxRotation: 40, minRotation: 30 } },
+      y: { grid: { color: '#1e233044' }, ticks: { callback: v => v + '%' } }
+    },
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#8a94a8' } },
+      tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw}%` } }
+    }
+  }
+});
+
+// ===== LANGUAGE TAB — Word Clouds & Hashtags =====
+function renderWordCloud(containerId, stance) {
+  const el = document.getElementById(containerId);
+  const words = distinctive[stance];
+  const maxC = Math.max(...words.map(w => w.c));
+  const color = ACCENT[stance];
+
+  let html = `<div class="lang-header"><div class="lang-dot" style="background:${COLORS[stance]}"></div><h3>${stance} — Distinctive Words</h3></div><div class="word-cloud">`;
+  words.forEach(w => {
+    const size = 13 + (w.c / maxC) * 20;
+    const opacity = 0.5 + (w.c / maxC) * 0.5;
+    const weight = (w.c / maxC > 0.5) ? 700 : 400;
+    html += `<span style="font-size:${size}px;color:${color};opacity:${opacity};font-weight:${weight}" title="${w.w}: ${w.c}">${w.w}</span>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderHashtags(containerId, stance) {
+  const el = document.getElementById(containerId);
+  const tags = topHashtags[stance];
+  const maxC = Math.max(...tags.map(t => t.c));
+  const color = COLORS[stance];
+
+  let html = `<div class="lang-header"><div class="lang-dot" style="background:${color}"></div><h3>${stance} — Top Hashtags</h3></div>`;
+  tags.forEach(t => {
+    const width = (t.c / maxC) * 100;
+    const opacity = 0.7 + (t.c / maxC) * 0.3;
+    html += `<div class="hashtag-row"><div class="hashtag-bar" style="width:${width}%;background:${color};opacity:${opacity}"></div><span class="hashtag-label">${t.t} <span class="hashtag-count">(${t.c})</span></span></div>`;
+  });
+  el.innerHTML = html;
+}
+
+['Discouraging','Neutral','Promotional'].forEach(s => {
+  renderWordCloud('words-' + s.toLowerCase(), s);
+  renderHashtags('hashtags-' + s.toLowerCase(), s);
+});
+
+// ===== INSIGHTS TAB =====
+const insightsGrid = document.getElementById('insights-grid');
+insights.forEach(ins => {
+  const color = COLORS[ins.stance];
+  insightsGrid.innerHTML += `
+    <div class="insight-card" style="border-left-color:${color}">
+      <div class="insight-title">${ins.title}</div>
+      <div class="insight-detail">${ins.detail}</div>
+    </div>`;
+});
+</script>
+
+</body>
+</html>
